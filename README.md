@@ -1,127 +1,247 @@
-# Sentinel-X: Multi-Agent AI Security Council
+# 🛡️ Sentinel Smart Door
 
-**M.Tech Research Project — Intelligent Physical Access Control & Threat Prediction**
+### Intelligent Visitor Access Control System
 
----
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue" />
+  <img src="https://img.shields.io/badge/Flask-Web%20Framework-green" />
+  <img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-red" />
+  <img src="https://img.shields.io/badge/REST%20API-Enabled-orange" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow" />
+</p>
 
-## What's New vs. Smart-Door-Fixed
-
-| Feature | smart-door-fixed | Sentinel-X |
-|---|---|---|
-| Risk assessment | Single heuristic score | 4 independent AI agents |
-| Threat model | Rule-based only | RandomForest ML (sklearn) |
-| Visitor history | Not tracked | Full trust-score DB |
-| Owner dashboard | Basic approval | Full council analytics |
-| Agent voting | ❌ | Weighted ensemble (40/30/20/10%) |
-| Visitor reputation | ❌ | Built-in reputation engine |
-| Threat analytics | ❌ | Risk breakdown dashboard |
+A secure and intelligent visitor access management system that enables homeowners and organizations to remotely monitor, verify, and grant visitor access through a web-based dashboard. The system combines real-time webcam image capture, owner approval workflows, secure time-bound access codes, and activity logging to provide a modern smart access control solution.
 
 ---
 
-## Project Structure
+## 🚀 Features
 
+### Visitor Portal
+- Submit visitor access requests through a web interface
+- Capture visitor photographs using a webcam
+- Receive owner-generated access codes
+- Verify identity using a secure authentication process
+- Get instant approval or rejection notifications
+
+### Owner Dashboard
+- View visitor requests in real time
+- Inspect captured visitor photographs
+- Generate unique 6-digit access codes
+- Approve or reject visitor entry requests
+- Monitor visitor access history
+
+### Security Features
+- Time-bound access code validation
+- Unique code generation for each request
+- Snapshot-based visitor verification
+- Access expiration mechanism
+- REST API-based communication
+- Complete visitor audit trail
+
+### Activity Monitoring
+- Timestamped visitor logs
+- Access approval and rejection records
+- Snapshot storage and review
+- Historical access tracking
+
+---
+
+## 🏗️ System Architecture
+
+```text
+Visitor
+   │
+   ▼
+Web Interface
+   │
+   ▼
+Flask Backend
+   │
+   ├── Visitor Request Management
+   ├── Webcam Snapshot Capture
+   ├── Secure Code Generation
+   ├── Access Verification
+   ├── REST APIs
+   └── Activity Logging
+   │
+   ▼
+Owner Dashboard
+   │
+   ▼
+Access Approval / Rejection
 ```
-sentinel-x/
-├── backend/
-│   ├── app.py              ← Flask API + 4 AI agents + council engine
-│   ├── requirements.txt    ← Flask, scikit-learn, numpy
-│   ├── access_passes.json  ← Active passes (auto-managed)
-│   ├── blocked.json        ← Rate-limit / lockout state
-│   ├── visitors_db.json    ← Visitor trust history (auto-created)
-│   ├── council_log.json    ← Per-session council decisions (auto-created)
-│   ├── visit_log.json      ← Activity log (auto-created)
-│   └── visitor_request.json ← Current pending requests (auto-created)
-├── frontend/
-│   ├── index.html          ← Visitor portal (shows council result)
-│   └── owner.html          ← Owner Command Center (full council UI)
-├── start.sh                ← One-click launcher (Linux/macOS)
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- Python
+- Flask
+- REST APIs
+
+### Frontend
+- HTML5
+- CSS3
+- JavaScript
+
+### Computer Vision
+- OpenCV
+- Webcam Integration
+
+### Data Storage
+- SQLite
+- JSON-based Data Handling
+
+### Tools & Libraries
+- Jinja2
+- Bootstrap / Custom UI
+- AJAX
+- Fetch API
+
+---
+
+## 📂 Project Structure
+
+```text
+Intelligent-Visitor-Access-Control-System/
+│
+├── static/
+│   ├── css/
+│   ├── js/
+│   ├── uploads/
+│   └── snapshots/
+│
+├── templates/
+│   ├── index.html
+│   ├── owner.html
+│   └── history.html
+│
+├── app.py
+├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## ⚙️ Installation
 
-### Linux / macOS
+### Clone the Repository
+
 ```bash
-chmod +x start.sh
-./start.sh
+git clone https://github.com/mdaliuddinhyder04/Intelligent-Visitor-Access-Control-System.git
+cd Intelligent-Visitor-Access-Control-System
 ```
 
-### Windows
-```cmd
+### Create a Virtual Environment
+
+```bash
 python -m venv venv
-venv\Scripts\pip install -r backend\requirements.txt
-venv\Scripts\python backend\app.py
 ```
 
-Then open:
-- **Visitor portal**: http://127.0.0.1:5000/
-- **Owner dashboard**: http://127.0.0.1:5000/owner
+### Activate the Virtual Environment
 
----
+#### Windows
 
-## AI Security Council — How It Works
-
-```
-          Visitor Request
-                ↓
-     ┌──────────┬──────────┬──────────┐
-     ↓          ↓          ↓          ↓
-Identity    Trust      Behavior   Threat
-Agent       Agent       Agent     Agent
-(30%)       (20%)       (10%)     (40%)
-     └──────────┴──────────┴──────────┘
-                ↓
-     Weighted Score + Majority Vote
-                ↓
-        APPROVE / REVIEW / DENY
-                ↓
-        Owner Command Center
+```bash
+venv\Scripts\activate
 ```
 
-### Agent Details
+#### Linux / macOS
 
-| Agent | Weight | Input | Output |
-|---|---|---|---|
-| Identity Agent | 30% | Face-match score, visitor type | Score 0-100, APPROVE/REVIEW/DENY |
-| Trust Agent | 20% | Visit history, approvals, denials | Trust score 0-100 |
-| Behavior Agent | 10% | Time of day, purpose clarity, category | Risk score → vote |
-| Threat Prediction Agent | 40% | All above features → RandomForest | Threat probability % |
-
-### Voting Algorithm
+```bash
+source venv/bin/activate
 ```
-final_score = threat*0.40 + identity*0.30 + trust*0.20 + behavior*0.10
 
-if score >= 72 → APPROVE
-elif score >= 48 → REVIEW  
-else → DENY
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run the Application
+
+```bash
+python app.py
 ```
 
 ---
 
-## API Endpoints
+## 🌐 Access the Application
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /api/visitor_request | Submit visitor request → runs council |
-| GET  | /api/check_requests  | Get pending request (with council data) |
-| POST | /api/create_pass     | Owner approves → generates OTP pass |
-| POST | /api/verify_code     | Visitor enters OTP to unlock door |
-| GET  | /api/threat_analytics | Risk breakdown stats |
-| GET  | /api/visitor_reputation | Trust scores per visitor |
-| GET  | /api/council_log     | All past council decisions |
-| GET  | /api/security_status | Live system stats + ML status |
+Open your browser and navigate to:
+
+```text
+http://127.0.0.1:5000
+```
 
 ---
 
-## Research Title (M.Tech)
+## 📸 Application Workflow
 
-**"Sentinel-X: Multi-Agent AI Security Council for Intelligent Physical Access Control and Threat Prediction"**
+1. Visitor opens the access portal.
+2. Visitor submits an access request.
+3. Webcam captures a visitor snapshot.
+4. Snapshot is uploaded to the server.
+5. Owner receives the request on the dashboard.
+6. Owner reviews visitor details.
+7. Secure access code is generated.
+8. Visitor enters the code.
+9. System validates the request.
+10. Access is granted or denied.
+11. Activity is recorded in history logs.
 
-### Research Contributions
-1. Multi-agent ensemble voting for physical security decisions
-2. Behavioral anomaly detection at door entry points
-3. ML-based (RandomForest) threat probability scoring
-4. Dynamic trust scoring from visit history
-5. Weighted agent consensus (Threat:40%, Identity:30%, Trust:20%, Behavior:10%)
+---
+
+## 🔒 Security Mechanisms
+
+- Secure 6-digit access code generation
+- Time-limited verification process
+- Snapshot-based identity confirmation
+- Request validation using REST APIs
+- Visitor activity logging
+- Session management and verification
+
+---
+
+## 📈 Future Enhancements
+
+- Face Recognition Authentication
+- QR Code-Based Entry
+- Email Notifications
+- SMS Alerts
+- Mobile Application
+- IoT Smart Lock Integration
+- Cloud Deployment
+- Multi-Owner Access Management
+- Real-Time Notifications
+
+---
+
+## 🎯 Learning Outcomes
+
+- Full-Stack Web Development
+- REST API Development
+- Computer Vision Integration
+- Authentication and Authorization Systems
+- Secure Access Management
+- Flask Application Development
+- Real-Time Dashboard Design
+
+---
+
+## 👨‍💻 Author
+
+**Mohammed Aliuddin Hyder**
+
+📧 mohammedaliuddinhyder04@gmail.com
+
+🔗 LinkedIn: www.linkedin.com/in/mdaliuddinhyder04
+
+🔗 GitHub: https://github.com/mdaliuddinhyder04
+
+---
+
+## ⭐ Support
+
+If you found this project useful, consider giving it a ⭐ on GitHub and sharing feedback for future improvements.
