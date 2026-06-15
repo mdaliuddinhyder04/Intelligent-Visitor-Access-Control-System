@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sentinel-X — Owner Command Center</title>
+  <style>
+    :root {
+      --bg: #edf2f7; --ink: #111827; --muted: #64748b; --panel: #ffffff;
+      --line: #dbe4ee; --accent: #0f766e; --accent2: #155e75;
+      --danger: #b91c1c; --warn: #b45309; --ok: #15803d;
+      --shadow: 0 18px 45px rgba(15,23,42,.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: radial-gradient(circle at 100% 0, rgba(15,118,110,.16), transparent 30%),
+                  linear-gradient(135deg, #f8fafc, var(--bg));
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    }
+    .app { width: min(1340px, calc(100% - 28px)); margin: 0 auto; padding: 20px 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; padding: 16px 0 20px;
+    }
+    h1 { margin: 0; font-size: clamp(24px, 3.5vw, 40px); }
+    .sub { color: var(--muted); margin-top: 5px; font-size: 14px; }
+    .live { padding: 9px 14px; border-radius: 999px; background: white; border: 1px solid var(--line); font-weight: 800; color: var(--accent); font-size: 13px; }
+    .grid-3col { display: grid; grid-template-columns: 1.1fr 1fr .9fr; gap: 16px; align-items: start; }
+    .card {
+      background: rgba(255,255,255,.9); border: 1px solid var(--line);
+      border-radius: 10px; box-shadow: var(--shadow);
+      padding: 16px; margin-bottom: 16px; backdrop-filter: blur(14px);
+    }
+    .card-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .card-title h2 { margin: 0; font-size: 16px; }
+    .tag { border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 850; background: #e6eef6; color: var(--accent2); }
+    /* Stats bar */
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat { padding: 14px; border-radius: 10px; background: white; border: 1px solid var(--line); }
+    .stat b { display: block; font-size: 26px; }
+    .stat span { color: var(--muted); font-size: 12px; }
+    /* Snapshot */
+    .snapshot {
+      width: 100%; min-height: 220px; border-radius: 8px;
+      background: #0f172a; object-fit: cover;
+      display: grid; place-items: center; color: white;
+      overflow: hidden; border: 1px solid #0f172a; font-size: 14px;
+    }
+    .snapshot img { width: 100%; display: block; }
+    /* Visitor meta */
+    .visitor-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+    .info { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .info b { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+    /* Action buttons */
+    .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    button, select, input { font: inherit; border-radius: 8px; border: 1px solid var(--line); padding: 10px 12px; }
+    button { cursor: pointer; font-weight: 900; border: 0; }
+    .primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+    .secondary { background: #e6eef6; color: var(--accent2); }
+    .danger { background: #fee2e2; color: var(--danger); }
+    .plain { background: #f8fafc; color: var(--ink); border: 1px solid var(--line); }
+    /* ═══ AI SECURITY COUNCIL ═══ */
+    .council-panel { background: #0f172a; border-radius: 10px; padding: 16px; color: white; margin-top: 12px; }
+    .council-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .council-header h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.7); }
+    .agent-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .agent-card {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: 12px;
+    }
+    .agent-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .agent-name-s { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.9); }
+    .agent-icon { font-size: 18px; }
+    .vote-pill { border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 900; }
+    .vote-APPROVE { background: #166534; color: #bbf7d0; }
+    .vote-REVIEW  { background: #92400e; color: #fde68a; }
+    .vote-DENY    { background: #7f1d1d; color: #fecaca; }
+    .agent-score { font-size: 22px; font-weight: 900; color: white; }
+    .agent-score span { font-size: 12px; font-weight: 400; color: rgba(255,255,255,.5); }
+    .agent-reasoning { font-size: 11px; color: rgba(255,255,255,.55); margin-top: 6px; line-height: 1.5; }
+    /* Progress bar */
+    .score-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin-top: 6px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 3px; transition: width .6s; }
+    /* Vote tally */
+    .vote-tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .tally-item { background: rgba(255,255,255,.06); border-radius: 8px; padding: 10px; text-align: center; }
+    .tally-count { font-size: 24px; font-weight: 900; }
+    .tally-label { font-size: 11px; color: rgba(255,255,255,.6); }
+    /* Weighted score ring */
+    .council-verdict-row { display: flex; gap: 14px; align-items: center; background: rgba(255,255,255,.06); border-radius: 10px; padding: 14px; }
+    .score-ring { width: 70px; height: 70px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 900; flex-shrink: 0; }
+    .verdict-text h4 { margin: 0 0 4px; font-size: 16px; }
+    .verdict-text p  { margin: 0; font-size: 12px; color: rgba(255,255,255,.6); line-height: 1.5; }
+    /* Weights display */
+    .weights-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .weight-chip { background: rgba(255,255,255,.08); border-radius: 99px; padding: 4px 10px; font-size: 11px; color: rgba(255,255,255,.7); }
+
+    /* Passes & log */
+    .passes, .log-list { display: grid; gap: 8px; max-height: 320px; overflow: auto; }
+    .row { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfdff; }
+    .row-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .code-big { font-size: 22px; font-weight: 950; letter-spacing: .18em; color: var(--accent); }
+    .muted { color: var(--muted); font-size: 12px; }
+    .share-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+    /* Analytics */
+    .risk-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+    .risk-bar-track { flex: 1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+    .risk-bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+    .low-fill  { background: var(--ok); }
+    .med-fill  { background: var(--warn); }
+    .high-fill { background: var(--danger); }
+    /* Reputation */
+    .rep-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; background: #fbfdff; }
+    .rep-name { font-weight: 700; font-size: 14px; }
+    .rep-badge { border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 900; }
+    .rep-high  { background: #dcfce7; color: var(--ok); }
+    .rep-med   { background: #fef3c7; color: var(--warn); }
+    .rep-low   { background: #fee2e2; color: var(--danger); }
+    /* Toast */
+    .toast {
+      position: fixed; top: 18px; left: 50%;
+      transform: translate(-50%, -80px);
+      background: #0f172a; color: white;
+      padding: 13px 18px; border-radius: 8px;
+      box-shadow: var(--shadow); opacity: 0; transition: .25s; z-index: 20;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .empty { color: var(--muted); padding: 18px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; font-size: 14px; }
+    /* Tabs inside card */
+    .inner-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+    .inner-tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 14px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .inner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    @media (max-width: 1100px) { .grid-3col { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 760px) { .grid-3col, .stats, .visitor-meta, .actions, .agent-grid, .vote-tally { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+  <main class="app">
+    <header>
+      <div>
+        <h1>⚔️ Sentinel-X Command Center</h1>
+        <div class="sub">Multi-Agent AI Security Council · ML Threat Prediction · Visitor Intelligence</div>
+      </div>
+      <div class="live" id="live">Connecting…</div>
+    </header>
+
+    <!-- Stats bar -->
+    <section class="stats">
+      <div class="stat"><b id="statPasses">0</b><span>Active passes</span></div>
+      <div class="stat"><b id="statLocked">0</b><span>Locked clients</span></div>
+      <div class="stat"><b id="statEvents">0</b><span>Security events</span></div>
+      <div class="stat"><b id="statPending">0</b><span>Pending requests</span></div>
+      <div class="stat"><b id="statML" style="font-size:16px">—</b><span>ML engine</span></div>
+    </section>
+
+    <div class="grid-3col">
+
+      <!-- ── LEFT COLUMN: Visitor + Council ── -->
+      <div>
+        <div class="card">
+          <div class="card-title">
+            <h2>🚨 Visitor Intelligence</h2>
+            <span class="tag" id="requestState">No pending</span>
+            <span class="tag" id="pendingCount" style="display:none;background:#fee2e2;color:#b91c1c"></span>
+          </div>
+
+          <div class="snapshot" id="snapshot">No live snapshot</div>
+
+          <div class="visitor-meta">
+            <div class="info"><b>Name</b><span id="vName">—</span></div>
+            <div class="info"><b>Type</b><span id="vType">—</span></div>
+            <div class="info"><b>Phone</b><span id="vPhone">—</span></div>
+            <div class="info"><b>Package</b><span id="vPackage">—</span></div>
+          </div>
+          <div class="info"><b>Purpose</b><span id="vPurpose">—</span></div>
+
+          <!-- ═══ AI SECURITY COUNCIL PANEL ═══ -->
+          <div class="council-panel" id="councilPanel" style="display:none">
+            <div class="council-header">
+              <h3>⚖️ AI Security Council</h3>
+              <span id="mlBadge" style="font-size:11px;color:rgba(255,255,255,.5)"></span>
+            </div>
+
+            <!-- 4 agent cards -->
+            <div class="agent-grid" id="agentGrid"></div>
+
+            <!-- Vote tally -->
+            <div class="vote-tally">
+              <div class="tally-item"><div class="tally-count" id="tallyApprove" style="color:#4ade80">0</div><div class="tally-label">APPROVE</div></div>
+              <div class="tally-item"><div class="tally-count" id="tallyReview" style="color:#fbbf24">0</div><div class="tally-label">REVIEW</div></div>
+              <div class="tally-item"><div class="tally-count" id="tallyDeny" style="color:#f87171">0</div><div class="tally-label">DENY</div></div>
+            </div>
+
+            <!-- Weighted verdict -->
+            <div class="council-verdict-row" id="verdictRow">
+              <div class="score-ring" id="scoreRing">—</div>
+              <div class="verdict-text">
+                <h4 id="verdictTitle">Council Decision</h4>
+                <p id="verdictRec"></p>
+              </div>
+            </div>
+
+            <!-- Agent weights -->
+            <div class="weights-row">
+              <span class="weight-chip">🤖 Threat 40%</span>
+              <span class="weight-chip">🪪 Identity 30%</span>
+              <span class="weight-chip">🤝 Trust 20%</span>
+              <span class="weight-chip">🔍 Behavior 10%</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" onclick="createPass('full')">✅ Approve &amp; Create Pass</button>
+            <button class="secondary" onclick="createPass('courier')">📦 Courier Pass</button>
+            <button class="danger" onclick="dismissRequest()">❌ Dismiss</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MIDDLE COLUMN: Passes + Create ── -->
+      <div>
+        <div class="card">
+          <div class="card-title"><h2>🔑 Active Passes</h2><span class="tag" id="passCount">0 active</span></div>
+          <div class="inner-tabs">
+            <button class="inner-tab active" onclick="showTab('passes','tab-passes',this)">Active</button>
+            <button class="inner-tab" onclick="showTab('passes','tab-create',this)">Create Custom</button>
+          </div>
+          <div id="tab-passes" class="tab-pane active">
+            <div class="passes" id="passList"><div class="empty">No active passes</div></div>
+          </div>
+          <div id="tab-create" class="tab-pane">
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:5px">Visitor name</label>
+              <input id="cpName" placeholder="e.g. John Smith" />
+            </div>
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:5px">Mode</label>
+              <select id="cpMode">
+                <option value="guest">Guest (3 min)</option>
+                <option value="courier">Courier (10 min)</option>
+                <option value="family">Family (3 min)</option>
+                <option value="service">Service (3 min)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:5px">TTL (seconds)</label>
+              <input id="cpTTL" type="number" value="180" min="30" max="3600" />
+            </div>
+            <button class="primary" style="width:100%" onclick="createCustomPass()">Generate Pass</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── RIGHT COLUMN: Analytics + Reputation + Log ── -->
+      <div>
+        <!-- Threat Analytics -->
+        <div class="card">
+          <div class="card-title"><h2>📊 Threat Analytics</h2></div>
+          <div id="analyticsBody"><div class="empty">No data yet</div></div>
+        </div>
+
+        <!-- Visitor Reputation -->
+        <div class="card">
+          <div class="card-title"><h2>🏅 Visitor Reputation</h2></div>
+          <div id="reputationBody"><div class="empty">No visitors tracked yet</div></div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card">
+          <div class="card-title">
+            <h2>📋 Activity Log</h2>
+            <button class="danger" onclick="clearLog()" style="font-size:12px;padding:6px 10px">Clear</button>
+          </div>
+          <div class="log-list" id="logList"><div class="empty">No events yet</div></div>
+        </div>
+      </div>
+
+    </div><!-- end grid -->
+  </main>
+
+  <script>
+    // ── State ────────────────────────────────────────────────────────────
+    let currentRequest = null;
+
+    // ── Toast ─────────────────────────────────────────────────────────────
+    function toast(msg, dur = 3000) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), dur);
+    }
+
+    // ── Tab helper ────────────────────────────────────────────────────────
+    function showTab(group, paneId, btn) {
+      document.querySelectorAll(`#tab-passes, #tab-create`).forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".inner-tab").forEach(b => b.classList.remove("active"));
+      document.getElementById(paneId).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    // ── Security status ───────────────────────────────────────────────────
+    async function refreshStatus() {
+      const d = await fetch("/api/security_status").then(r => r.json()).catch(() => ({}));
+      document.getElementById("statPasses").textContent = d.active_passes ?? 0;
+      document.getElementById("statLocked").textContent = d.locked_clients ?? 0;
+      document.getElementById("statEvents").textContent = d.total_events ?? 0;
+      document.getElementById("statML").textContent = d.ml_available ? "✅ ON" : "⚠️ OFF";
+    }
+
+    // ── Visitor request ───────────────────────────────────────────────────
+    async function refreshRequest() {
+      const d = await fetch("/api/check_requests").then(r => r.json()).catch(() => ({}));
+      const cnt = await fetch("/api/pending_count").then(r => r.json()).catch(() => ({ count: 0 }));
+      document.getElementById("statPending").textContent = cnt.count ?? 0;
+
+      const pcEl = document.getElementById("pendingCount");
+      if (cnt.count > 1) {
+        pcEl.style.display = ""; pcEl.textContent = `+${cnt.count - 1} more`;
+      } else { pcEl.style.display = "none"; }
+
+      if (!d.pending) {
+        document.getElementById("requestState").textContent = "No pending";
+        clearVisitorUI();
+        return;
+      }
+      currentRequest = d;
+      document.getElementById("requestState").textContent = "🔴 Visitor waiting!";
+
+      // Basic info
+      document.getElementById("vName").textContent    = d.name || "—";
+      document.getElementById("vType").textContent    = d.visitor_type || "—";
+      document.getElementById("vPhone").textContent   = d.phone || "—";
+      document.getElementById("vPackage").textContent = d.package_id || "—";
+      document.getElementById("vPurpose").textContent = d.purpose || "—";
+
+      // Snapshot
+      const snap = await fetch("/api/get_snapshot").then(r => r.json()).catch(() => ({ img: null }));
+      const snapEl = document.getElementById("snapshot");
+      if (snap.img) {
+        snapEl.innerHTML = `<img src="${snap.img}" alt="Visitor snapshot" />`;
+      } else {
+        snapEl.innerHTML = "No snapshot available";
+      }
+
+      // Render AI Security Council
+      if (d.council) renderCouncil(d.council);
+    }
+
+    function clearVisitorUI() {
+      currentRequest = null;
+      ["vName","vType","vPhone","vPackage","vPurpose"].forEach(id => document.getElementById(id).textContent = "—");
+      document.getElementById("snapshot").innerHTML = "No live snapshot";
+      document.getElementById("councilPanel").style.display = "none";
+    }
+
+    // ── Council renderer ──────────────────────────────────────────────────
+    function renderCouncil(council) {
+      document.getElementById("councilPanel").style.display = "block";
+      document.getElementById("mlBadge").textContent =
+        council.agents?.find(a => a.agent === "Threat Prediction Agent")?.method?.includes("ML") ? "🤖 ML active" : "📐 Rule-based";
+
+      // Agent cards
+      const agentGrid = document.getElementById("agentGrid");
+      agentGrid.innerHTML = (council.agents || []).map(a => {
+        const fillColor = a.vote === "APPROVE" ? "#4ade80" : a.vote === "DENY" ? "#f87171" : "#fbbf24";
+        return `
+          <div class="agent-card">
+            <div class="agent-top">
+              <span class="agent-icon">${a.icon}</span>
+              <span class="vote-pill vote-${a.vote}">${a.vote}</span>
+            </div>
+            <div class="agent-name-s">${a.agent}</div>
+            <div class="agent-score">${Math.round(a.score)}<span>/100</span></div>
+            <div class="score-bar">
+              <div class="score-fill" style="width:${a.score}%;background:${fillColor}"></div>
+            </div>
+            <div class="agent-reasoning">${a.reasoning || ""}</div>
+          </div>`;
+      }).join("");
+
+      // Vote tally
+      const vc = council.vote_counts || {};
+      document.getElementById("tallyApprove").textContent = vc.APPROVE || 0;
+      document.getElementById("tallyReview").textContent  = vc.REVIEW  || 0;
+      document.getElementById("tallyDeny").textContent    = vc.DENY    || 0;
+
+      // Weighted verdict
+      const dec = council.final_decision || "REVIEW";
+      const ws  = council.weighted_score || 0;
+      const ringColor = dec === "APPROVE" ? "#166534" : dec === "DENY" ? "#7f1d1d" : "#92400e";
+      const ringText  = dec === "APPROVE" ? "#4ade80" : dec === "DENY" ? "#f87171" : "#fbbf24";
+      const emoji     = dec === "APPROVE" ? "✅" : dec === "DENY" ? "🚫" : "⚠️";
+
+      const ring = document.getElementById("scoreRing");
+      ring.style.background = ringColor;
+      ring.style.color = ringText;
+      ring.textContent = Math.round(ws);
+
+      document.getElementById("verdictTitle").textContent = `${emoji} ${dec}`;
+      document.getElementById("verdictRec").textContent   = council.recommendation || "";
+    }
+
+    // ── Create pass ───────────────────────────────────────────────────────
+    async function createPass(mode) {
+      if (!currentRequest) { toast("No pending visitor request."); return; }
+      const r = currentRequest;
+      const visitor = { ...r };
+      const body = { visitor, mode: mode === "full" ? r.visitor_type : "courier" };
+
+      const d = await fetch("/api/create_pass", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).then(r => r.json()).catch(() => null);
+
+      if (!d || !d.code) { toast("Failed to create pass."); return; }
+      await fetch("/api/clear_requests", { method: "POST" });
+      toast(`✅ Pass created: ${d.code}`);
+      refreshAll();
+    }
+
+    async function createCustomPass() {
+      const name = document.getElementById("cpName").value.trim() || "Owner Pass";
+      const mode = document.getElementById("cpMode").value;
+      const ttl  = parseInt(document.getElementById("cpTTL").value) || 180;
+      const body = { visitor: { name }, mode, ttl };
+      const d = await fetch("/api/create_pass", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).then(r => r.json()).catch(() => null);
+      if (!d?.code) { toast("Failed."); return; }
+      toast(`✅ Pass ${d.code} created`);
+      refreshPasses();
+    }
+
+    async function dismissRequest() {
+      await fetch("/api/clear_requests", { method: "POST" });
+      toast("Request dismissed.");
+      clearVisitorUI();
+      refreshStatus();
+    }
+
+    // ── Passes ────────────────────────────────────────────────────────────
+    async function refreshPasses() {
+      const passes = await fetch("/api/passes").then(r => r.json()).catch(() => []);
+      const el = document.getElementById("passList");
+      document.getElementById("passCount").textContent = `${passes.length} active`;
+      if (!passes.length) { el.innerHTML = '<div class="empty">No active passes</div>'; return; }
+      el.innerHTML = passes.map(p => {
+        const mins = Math.floor(p.remaining / 60), secs = p.remaining % 60;
+        const timeStr = `${mins}m ${secs}s`;
+        return `
+          <div class="row">
+            <div class="row-head">
+              <span class="code-big">${p.code}</span>
+              <span class="muted">${timeStr} left · ${p.mode}</span>
+            </div>
+            <div class="muted">${p.visitor?.name || "—"} · ${p.created_label}</div>
+            <div class="share-row" style="margin-top:8px">
+              <button class="secondary" style="font-size:12px" onclick="copyText('${p.code}')">📋 Copy Code</button>
+              <button class="secondary" style="font-size:12px" onclick="copyText('${p.share_url}')">🔗 Copy Link</button>
+              <button class="danger" style="font-size:12px" onclick="revokePass('${p.id}')">🚫 Revoke</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    async function revokePass(id) {
+      await fetch(`/api/revoke_pass/${id}`, { method: "POST" });
+      toast("Pass revoked.");
+      refreshPasses();
+    }
+
+    // ── Threat Analytics ──────────────────────────────────────────────────
+    async function refreshAnalytics() {
+      const d = await fetch("/api/threat_analytics").then(r => r.json()).catch(() => null);
+      const el = document.getElementById("analyticsBody");
+      if (!d || d.total === 0) { el.innerHTML = '<div class="empty">No council decisions yet</div>'; return; }
+      const pct = n => d.total > 0 ? Math.round(n / d.total * 100) : 0;
+      el.innerHTML = `
+        <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">
+          ${d.total} total evaluations · ML ${d.ml_enabled ? "enabled ✅" : "disabled ⚠️"}
+        </div>
+        <div class="risk-bar-row">
+          <span style="width:80px;font-size:12px">Low Risk</span>
+          <div class="risk-bar-track"><div class="risk-bar-fill low-fill" style="width:${pct(d.low_risk)}%"></div></div>
+          <span style="font-size:12px;width:55px">${d.low_risk} (${pct(d.low_risk)}%)</span>
+        </div>
+        <div class="risk-bar-row">
+          <span style="width:80px;font-size:12px">Medium</span>
+          <div class="risk-bar-track"><div class="risk-bar-fill med-fill" style="width:${pct(d.med_risk)}%"></div></div>
+          <span style="font-size:12px;width:55px">${d.med_risk} (${pct(d.med_risk)}%)</span>
+        </div>
+        <div class="risk-bar-row">
+          <span style="width:80px;font-size:12px">High Risk</span>
+          <div class="risk-bar-track"><div class="risk-bar-fill high-fill" style="width:${pct(d.high_risk)}%"></div></div>
+          <span style="font-size:12px;width:55px">${d.high_risk} (${pct(d.high_risk)}%)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">
+          <div style="background:#dcfce7;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:var(--ok)">${d.approvals}</div>
+            <div style="font-size:11px;color:var(--ok)">Approvals</div>
+          </div>
+          <div style="background:#fef3c7;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:var(--warn)">${d.reviews}</div>
+            <div style="font-size:11px;color:var(--warn)">Reviews</div>
+          </div>
+          <div style="background:#fee2e2;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:20px;font-weight:900;color:var(--danger)">${d.denials}</div>
+            <div style="font-size:11px;color:var(--danger)">Denials</div>
+          </div>
+        </div>`;
+    }
+
+    // ── Visitor Reputation ────────────────────────────────────────────────
+    async function refreshReputation() {
+      const records = await fetch("/api/visitor_reputation").then(r => r.json()).catch(() => []);
+      const el = document.getElementById("reputationBody");
+      if (!records.length) { el.innerHTML = '<div class="empty">No visitors tracked yet</div>'; return; }
+      el.innerHTML = records.slice(0, 8).map(r => {
+        const cls = r.trust_score >= 70 ? "rep-high" : r.trust_score >= 45 ? "rep-med" : "rep-low";
+        return `
+          <div class="rep-row">
+            <div>
+              <div class="rep-name">${r.name}</div>
+              <div class="muted">${r.visits} visits · ✅${r.approved} ❌${r.denied} ⚠️${r.failed}</div>
+            </div>
+            <span class="rep-badge ${cls}">${r.trust_score}</span>
+          </div>`;
+      }).join("");
+    }
+
+    // ── Activity log ──────────────────────────────────────────────────────
+    async function refreshLog() {
+      const log = await fetch("/api/log").then(r => r.json()).catch(() => []);
+      const el = document.getElementById("logList");
+      if (!log.length) { el.innerHTML = '<div class="empty">No events yet</div>'; return; }
+      const icons = {
+        visitor_requested: "🔔", pass_created: "🔑", pass_revoked: "🚫",
+        access_granted: "✅", access_denied: "❌", log_updated: "📋"
+      };
+      el.innerHTML = log.slice(0, 30).map(l => `
+        <div class="row">
+          <div class="row-head">
+            <span style="font-weight:700;font-size:13px">${icons[l.event] || "·"} ${l.event.replace(/_/g," ")}</span>
+            <span class="muted">${l.time}</span>
+          </div>
+          ${l.detail?.name ? `<div class="muted">${l.detail.name}</div>` : ""}
+          ${l.detail?.council_decision ? `<div class="muted">Council: <strong>${l.detail.council_decision}</strong></div>` : ""}
+        </div>`).join("");
+    }
+
+    async function clearLog() {
+      await fetch("/api/log", { method: "DELETE" });
+      toast("Log cleared."); refreshLog(); refreshStatus();
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => toast("Copied!")).catch(() => {
+        const t = document.createElement("textarea");
+        t.value = text; document.body.appendChild(t); t.select();
+        document.execCommand("copy"); document.body.removeChild(t); toast("Copied!");
+      });
+    }
+
+    // ── SSE ───────────────────────────────────────────────────────────────
+    function connectSSE() {
+      const es = new EventSource("/api/events");
+      es.addEventListener("connected",    () => { document.getElementById("live").textContent = "🟢 Live"; });
+      es.addEventListener("visitor_arrived", () => { toast("🔔 Visitor arrived!"); refreshAll(); });
+      es.addEventListener("pass_created",  () => refreshPasses());
+      es.addEventListener("pass_revoked",  () => refreshPasses());
+      es.addEventListener("door_unlocked", () => { toast("🔓 Door unlocked!"); refreshAll(); });
+      es.addEventListener("access_denied", () => refreshLog());
+      es.addEventListener("log_updated",   () => { refreshLog(); refreshStatus(); });
+      es.addEventListener("request_cleared", () => { clearVisitorUI(); refreshAll(); });
+      es.onerror = () => { document.getElementById("live").textContent = "🔴 Reconnecting…"; };
+    }
+
+    function refreshAll() {
+      refreshStatus(); refreshRequest(); refreshPasses(); refreshLog();
+      refreshAnalytics(); refreshReputation();
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    connectSSE();
+    refreshAll();
+    setInterval(refreshAll, 8000);
+    setInterval(refreshPasses, 15000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sentinel-X – Visitor Access</title>
+  <style>
+    :root {
+      --bg: #eef3f8; --ink: #132033; --muted: #64748b; --line: #dbe4ee;
+      --panel: #ffffff; --accent: #0f766e; --accent-2: #155e75;
+      --danger: #b91c1c; --ok: #15803d; --warn: #b45309;
+      --shadow: 0 18px 45px rgba(15,23,42,.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 15% 10%, rgba(15,118,110,.18), transparent 30%),
+                  linear-gradient(135deg, #f8fbff 0%, #e9f0f7 100%);
+    }
+    .shell {
+      width: min(1120px, calc(100% - 32px)); margin: 0 auto; min-height: 100vh;
+      display: grid; grid-template-columns: 1.08fr .92fr;
+      gap: 28px; align-items: center; padding: 28px 0;
+    }
+    .hero {
+      background: linear-gradient(150deg, #0f172a, #164e63 58%, #0f766e);
+      color: white; border-radius: 8px; padding: 38px;
+      box-shadow: var(--shadow); min-height: 720px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .hero:after {
+      content: ""; position: absolute; inset: auto -80px -120px auto;
+      width: 310px; height: 310px; background: rgba(255,255,255,.12); border-radius: 50%;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: .04em; }
+    .mark {
+      width: 42px; height: 42px; border-radius: 8px;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
+      font-size: 13px; font-weight: 900;
+    }
+    h1 { font-size: clamp(32px, 5vw, 64px); line-height: .96; margin: 52px 0 14px; letter-spacing: 0; }
+    .lead { color: rgba(255,255,255,.82); font-size: 16px; line-height: 1.7; }
+    .door-visual {
+      margin-top: 36px; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 8px; padding: 18px;
+      background: rgba(255,255,255,.08);
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      position: relative; z-index: 1;
+    }
+    .metric { padding: 14px; border-radius: 8px; background: rgba(255,255,255,.1); }
+    .metric b { display: block; font-size: 22px; }
+    .metric span { color: rgba(255,255,255,.72); font-size: 12px; }
+    /* Council result section (shown after submission) */
+    .council-preview {
+      margin-top: 18px; border: 1px solid rgba(255,255,255,.18);
+      border-radius: 8px; padding: 16px; background: rgba(0,0,0,.2);
+      display: none;
+    }
+    .council-preview h3 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing:.06em; color: rgba(255,255,255,.7); }
+    .agent-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 13px; }
+    .agent-row:last-child { border-bottom: 0; }
+    .agent-name { display: flex; align-items: center; gap: 8px; }
+    .vote-badge { padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 900; }
+    .APPROVE { background: #166534; color: #bbf7d0; }
+    .REVIEW  { background: #92400e; color: #fde68a; }
+    .DENY    { background: #7f1d1d; color: #fecaca; }
+    .council-verdict { margin-top: 12px; text-align: center; padding: 10px; border-radius: 8px; font-weight: 900; font-size: 15px; }
+    .verdict-APPROVE { background: #166534; }
+    .verdict-REVIEW  { background: #92400e; }
+    .verdict-DENY    { background: #7f1d1d; }
+
+    /* Right panel */
+    .panel {
+      background: rgba(255,255,255,.82); border: 1px solid rgba(219,228,238,.9);
+      border-radius: 8px; box-shadow: var(--shadow);
+      overflow: hidden; backdrop-filter: blur(14px);
+    }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+    .tab {
+      border: 0; background: transparent; padding: 14px 6px; cursor: pointer;
+      font: inherit; font-weight: 700; font-size: 13px; color: var(--muted);
+      border-bottom: 2px solid transparent; transition: .15s;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(15,118,110,.05); }
+    .content { padding: 22px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%; font: inherit; border-radius: 8px;
+      border: 1px solid var(--line); padding: 11px 13px; background: white;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(15,118,110,.11); outline: none; }
+    textarea { min-height: 72px; resize: vertical; }
+    video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: -9999px; top: -9999px; }
+    canvas { display: none; }
+    .actions { display: grid; gap: 10px; }
+    .btn { border: 0; border-radius: 8px; padding: 13px 16px; font-weight: 900; cursor: pointer; font-size: 15px; }
+    .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; }
+    .secondary { background: #e6eef6; color: #164e63; }
+    .code-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .status {
+      min-height: 46px; margin-top: 14px; padding: 12px 14px;
+      border-radius: 8px; background: #f8fafc; color: var(--muted);
+      font-weight: 700; border: 1px solid var(--line);
+    }
+    .hidden { display: none; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .door-visual { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="brand"><div class="mark">SX</div> SENTINEL-X ACCESS</div>
+        <h1>AI Security Council protects every entry.</h1>
+        <p class="lead">4 independent AI agents — Identity, Trust, Behavior, and Threat — analyze your request and vote before the owner sees anything. Weighted ensemble decision. Real-time results.</p>
+      </div>
+      <div class="door-visual">
+        <div class="metric"><b>4</b><span>AI agents</span></div>
+        <div class="metric"><b>ML</b><span>threat model</span></div>
+        <div class="metric"><b>live</b><span>council vote</span></div>
+      </div>
+
+      <!-- Council result appears here after submit -->
+      <div class="council-preview" id="councilPreview">
+        <h3>⚖️ AI Security Council Result</h3>
+        <div id="agentRows"></div>
+        <div class="council-verdict" id="councilVerdict"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="tabs">
+        <button class="tab active" data-type="family">👨‍👩‍👧 Family</button>
+        <button class="tab" data-type="courier">📦 Courier</button>
+        <button class="tab" data-type="service">🔧 Service</button>
+        <button class="tab" data-type="guest">🧑 Guest</button>
+      </div>
+      <div class="content">
+        <video id="preview" autoplay muted playsinline></video>
+        <canvas id="canvas" width="640" height="400"></canvas>
+
+        <div class="field">
+          <label for="name">Full name</label>
+          <input id="name" placeholder="Your full name" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <input id="phone" placeholder="10-digit mobile number" inputmode="numeric" required />
+        </div>
+        <div class="field hidden" id="packageField">
+          <label for="packageId">Package / AWB ID</label>
+          <input id="packageId" placeholder="Order or tracking number" />
+        </div>
+        <div class="field">
+          <label for="purpose">Purpose of visit</label>
+          <textarea id="purpose" placeholder="Why are you here? E.g. delivering Amazon parcel, electrician visit, family gathering…" required></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" onclick="requestAccess()">🔔 Request Owner Approval</button>
+          <div class="code-row">
+            <input id="codeInput" maxlength="6" placeholder="Enter 6-digit pass code" inputmode="numeric" />
+            <button class="btn secondary" onclick="verifyCode()">🔓 Unlock</button>
+          </div>
+        </div>
+        <div class="status" id="status">Ready. Select your visitor type and fill in your details.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = { visitor_type: "family", cameraReady: false };
+    const video = document.getElementById("preview");
+    const canvas = document.getElementById("canvas");
+    const statusEl = document.getElementById("status");
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        state.visitor_type = tab.dataset.type;
+        document.getElementById("packageField").classList.toggle("hidden", state.visitor_type !== "courier");
+      });
+    });
+
+    if (location.pathname.startsWith("/pass/")) {
+      setStatus("🔑 Secure pass link opened. Enter the code to unlock.", "ok");
+    }
+
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera unavailable");
+      stopCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      video.srcObject = stream;
+      await video.play();
+      await new Promise((res, rej) => {
+        if (video.readyState >= 2 && video.videoWidth > 0) return res();
+        const timer = setTimeout(() => rej(new Error("Camera timeout")), 4000);
+        video.oncanplay = video.onloadedmetadata = () => { if (video.videoWidth > 0) { clearTimeout(timer); res(); } };
+      });
+      state.cameraReady = true;
+    }
+
+    function stopCamera() {
+      if (!video.srcObject) return;
+      video.srcObject.getTracks().forEach(t => t.stop());
+      video.srcObject = null;
+      state.cameraReady = false;
+    }
+
+    function setStatus(text, type = "") {
+      statusEl.textContent = text;
+      const colors = { ok: "#15803d", bad: "#b91c1c", warn: "#b45309", info: "#0f766e" };
+      statusEl.style.color = colors[type] || "#64748b";
+    }
+
+    async function captureSnapshot() {
+      try {
+        await startCamera();
+        const ctx = canvas.getContext("2d");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 400;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", 0.9));
+        if (blob) await fetch("/api/visitor_snapshot", { method: "POST", body: blob });
+        return true;
+      } catch (err) {
+        const msg = err.name === "NotAllowedError" ? "Camera permission denied" : "Camera unavailable";
+        setStatus(msg + ". Sending request without snapshot.", "warn");
+        return false;
+      } finally { stopCamera(); }
+    }
+
+    function renderCouncil(council) {
+      const preview = document.getElementById("councilPreview");
+      const rowsEl = document.getElementById("agentRows");
+      const verdictEl = document.getElementById("councilVerdict");
+
+      rowsEl.innerHTML = council.agents.map(a => `
+        <div class="agent-row">
+          <div class="agent-name">${a.icon} <strong>${a.agent}</strong></div>
+          <div style="font-size:12px;color:rgba(255,255,255,.6)">Score: ${a.score}</div>
+          <span class="vote-badge ${a.vote}">${a.vote}</span>
+        </div>
+      `).join("");
+
+      const d = council.final_decision;
+      const emoji = d === "APPROVE" ? "✅" : d === "REVIEW" ? "⚠️" : "🚫";
+      verdictEl.className = "council-verdict verdict-" + d;
+      verdictEl.textContent = `${emoji} Council Decision: ${d} (score ${council.weighted_score})`;
+      preview.style.display = "block";
+    }
+
+    async function requestAccess() {
+      const name    = document.getElementById("name").value.trim();
+      const phone   = document.getElementById("phone").value.trim();
+      const purpose = document.getElementById("purpose").value.trim();
+
+      if (!name || !phone || !purpose) return setStatus("Name, Phone and Purpose are mandatory.", "bad");
+      if (!/^\d{10}$/.test(phone)) return setStatus("Phone must be exactly 10 digits.", "bad");
+
+      setStatus("📡 Capturing snapshot and running AI Security Council…", "info");
+      await fetch("/api/clear_snapshot", { method: "POST" }).catch(() => {});
+      await captureSnapshot().catch(() => {});
+
+      const payload = {
+        visitor_type: state.visitor_type,
+        name, phone, purpose,
+        package_id: document.getElementById("packageId").value.trim()
+      };
+
+      try {
+        const res = await fetch("/api/visitor_request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) return setStatus(data.error || "Request failed.", "bad");
+
+        // Show council result to visitor
+        if (data.council) renderCouncil(data.council);
+
+        const d = data.council?.final_decision || "";
+        const msg = d === "APPROVE"
+          ? "✅ Council pre-approved! Owner is notified. Wait for your code."
+          : d === "DENY"
+          ? "🚫 Council flagged your request. Owner review required."
+          : "⚠️ Owner notified. Council recommends manual review.";
+        setStatus(msg, d === "APPROVE" ? "ok" : d === "DENY" ? "bad" : "warn");
+
+        const btn = document.querySelector(".btn.primary");
+        if (btn) { btn.disabled = true; setTimeout(() => btn.disabled = false, 8000); }
+      } catch (err) {
+        setStatus("Network error: " + err.message, "bad");
+      }
+    }
+
+    async function verifyCode() {
+      const code = document.getElementById("codeInput").value.trim();
+      if (!/^\d{6}$/.test(code)) return setStatus("Enter a valid 6-digit code.", "bad");
+      try {
+        const res = await fetch("/api/verify_code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        const messages = {
+          success: "🔓 Access granted! Door is unlocked.",
+          fail: `❌ Incorrect code. Attempts left: ${data.attempts_left ?? 0}.`,
+          expired: "⏰ This code has expired.",
+          used: "✅ This code was already used.",
+          locked: data.message || "🔒 Too many attempts. Temporarily locked."
+        };
+        setStatus(messages[data.result] || "Unable to verify.", data.result === "success" ? "ok" : "bad");
+        if (data.result === "success") {
+          document.getElementById("name").value = "";
+          document.getElementById("phone").value = "";
+          document.getElementById("purpose").value = "";
+          document.getElementById("codeInput").value = "";
+          document.getElementById("councilPreview").style.display = "none";
+        }
+      } catch (err) {
+        setStatus("Network error: " + err.message, "bad");
+      }
+    }
+
+    // SSE for live door events
+    const es = new EventSource("/api/events");
+    es.addEventListener("door_unlocked", () => setStatus("🔓 Access granted! Door is now unlocked.", "ok"));
+    es.addEventListener("request_cleared", () => {
+      if (statusEl.textContent.includes("notified") || statusEl.textContent.includes("Council")) {
+        setStatus("Your request was reviewed by the owner.", "warn");
+      }
+    });
+    es.onerror = () => {};
+  </script>
+</body>
+</html>
